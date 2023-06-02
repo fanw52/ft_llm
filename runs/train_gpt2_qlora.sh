@@ -38,5 +38,4 @@ CUDA_VISIBLE_DEVICES=0 python \
     --trainable ${lora_trainable} \
     --modules_to_save ${modules_to_save} \
     --lora_dropout ${lora_dropout} \
-    --fp16 \
-    --bits 4
+    --fp16

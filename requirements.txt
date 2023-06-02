@@ -8,3 +8,6 @@ sentencepiece==0.1.99
 tqdm==4.65.0
 transformers==4.28.1
 evaluate==0.4.0
+cpm_kernels
+streamlit
+streamlit_chat

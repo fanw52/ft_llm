@@ -101,6 +101,7 @@ class ModelArguments:
         default="nf4",
         metadata={"help": "Quantization data type to use. Should be one of `fp4` or `nf4`."}
     )
+    qlora: Optional[bool] = field(default=False)
 
 @dataclass
 class DataTrainingArguments:
@@ -259,7 +260,6 @@ class DataTrainingArguments:
             )
         },
     )
-    
 
     def __post_init__(self):
         if self.dataset_name is None and self.train_file is None and self.validation_file is None and self.test_file is None:
@@ -273,4 +273,3 @@ class DataTrainingArguments:
                 assert extension in ["csv", "json"], "`validation_file` should be a csv or a json file."
         if self.val_max_target_length is None:
             self.val_max_target_length = self.max_target_length
-

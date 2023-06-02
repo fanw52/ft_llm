@@ -241,43 +241,53 @@ def main():
         )
 
     if model_args.model_name_or_path:
-        torch_dtype = (
-            model_args.torch_dtype
-            if model_args.torch_dtype in ["auto", None]
-            else getattr(torch, model_args.torch_dtype)
-        )
-        model = AutoModelForCausalLM.from_pretrained(
-            model_args.model_name_or_path,
-            from_tf=bool(".ckpt" in model_args.model_name_or_path),
-            config=config,
-            cache_dir=model_args.cache_dir,
-            revision=model_args.model_revision,
-            use_auth_token=True if model_args.use_auth_token else None,
-            torch_dtype=torch_dtype,
-            low_cpu_mem_usage=model_args.low_cpu_mem_usage,
-        )
+        if model_args.qlora:
 
-        # compute_dtype = (
-        #     torch.float16 if training_args.fp16 else (torch.bfloat16 if training_args.bf16 else torch.float32))
-        # model = AutoModelForCausalLM.from_pretrained(
-        #     model_args.model_name_or_path,
-        #     load_in_4bit=model_args.bits == 4,
-        #     load_in_8bit=model_args.bits == 8,
-        #     device_map='auto',
-        #     # max_memory=max_memory,
-        #     quantization_config=BitsAndBytesConfig(
-        #         load_in_4bit=model_args.bits == 4,
-        #         load_in_8bit=model_args.bits == 8,
-        #         llm_int8_threshold=6.0,
-        #         llm_int8_has_fp16_weight=False,
-        #         bnb_4bit_compute_dtype=compute_dtype,
-        #         bnb_4bit_use_double_quant=model_args.double_quant,
-        #         bnb_4bit_quant_type=model_args.quant_type  # {'fp4', 'nf4'}
-        #     ),
-        #     torch_dtype=(
-        #         torch.float32 if training_args.fp16 else (torch.bfloat16 if training_args.bf16 else torch.float32)),
-        #     trust_remote_code=model_args.trust_remote_code,
-        # )
+            compute_dtype = (
+                torch.float16 if training_args.fp16 else (torch.bfloat16 if training_args.bf16 else torch.float32))
+
+            if compute_dtype == torch.float16 and model_args.bits == 4:
+                major, minor = torch.cuda.get_device_capability()
+                if major >= 8:
+                    logger.info('=' * 80)
+                    logger.info('Your GPU supports bfloat16, you can accelerate training with the argument --bf16')
+                    logger.info('=' * 80)
+
+            model = AutoModelForCausalLM.from_pretrained(
+                model_args.model_name_or_path,
+                load_in_4bit=model_args.bits == 4,
+                load_in_8bit=model_args.bits == 8,
+                config=config,
+                cache_dir=model_args.cache_dir,
+                device_map='auto',
+                quantization_config=BitsAndBytesConfig(
+                    load_in_4bit=model_args.bits == 4,
+                    load_in_8bit=model_args.bits == 8,
+                    llm_int8_threshold=6.0,
+                    llm_int8_has_fp16_weight=False,
+                    bnb_4bit_compute_dtype=compute_dtype,
+                    bnb_4bit_use_double_quant=model_args.double_quant,
+                    bnb_4bit_quant_type=model_args.quant_type  # {'fp4', 'nf4'}
+                ),
+                torch_dtype=(
+                    torch.float32 if training_args.fp16 else (torch.bfloat16 if training_args.bf16 else torch.float32)),
+            )
+        else:
+            torch_dtype = (
+                model_args.torch_dtype
+                if model_args.torch_dtype in ["auto", None]
+                else getattr(torch, model_args.torch_dtype)
+            )
+            model = AutoModelForCausalLM.from_pretrained(
+                model_args.model_name_or_path,
+                from_tf=bool(".ckpt" in model_args.model_name_or_path),
+                config=config,
+                cache_dir=model_args.cache_dir,
+                revision=model_args.model_revision,
+                use_auth_token=True if model_args.use_auth_token else None,
+                torch_dtype=torch_dtype,
+                low_cpu_mem_usage=model_args.low_cpu_mem_usage,
+            )
 
     else:
         model = AutoModelForCausalLM.from_config(config)
