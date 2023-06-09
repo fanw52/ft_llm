@@ -1,6 +1,6 @@
 import streamlit as st
 from streamlit_chat import message
-from transformers import AutoModel, AutoTokenizer
+# from transformers import AutoModel, AutoTokenizer
 
 st.set_page_config(
     page_title="大模型演示",
@@ -10,10 +10,21 @@ st.set_page_config(
 
 @st.cache_resource
 def get_model():
-    model_path = "/data1/pretrained_models/chatglm-6b-int4"
-    tokenizer = AutoTokenizer.from_pretrained(model_path, trust_remote_code=True)
-    model = AutoModel.from_pretrained(model_path, trust_remote_code=True).half().cuda()
+    # model_path = "THUDM/chatglm-6b-int4"
+    # model = AutoModel.from_pretrained(model_path, trust_remote_code=True, device_map='auto')
+    # tokenizer = AutoTokenizer.from_pretrained(model_path, trust_remote_code=True)
 
+    # model_path = "/data1/pretrained_models/chatglm-6b-int4"
+    # tokenizer = AutoTokenizer.from_pretrained(model_path, trust_remote_code=True)
+    # model = AutoModel.from_pretrained(model_path, trust_remote_code=True).half().cuda()
+
+    model_path = "/data1/pretrained_models/chatglm-6b-20230523-wx-lora-int4"
+    import sys
+    sys.path.append("./")
+    from models.chatglm.modeling_chatglm import ChatGLMForConditionalGeneration
+    from models.chatglm.tokenization_chatglm import ChatGLMTokenizer
+    tokenizer = ChatGLMTokenizer.from_pretrained(model_path)
+    model = ChatGLMForConditionalGeneration.from_pretrained(model_path).half().cuda()
     model = model.eval()
     return tokenizer, model
 
@@ -51,7 +62,7 @@ max_length = st.sidebar.slider(
     'max_length', 0, 4096, 2048, step=1
 )
 top_p = st.sidebar.slider(
-    'top_p', 0.0, 1.0, 0.6, step=0.01
+    'top_p', 0.0, 1.0, 0.9, step=0.01
 )
 temperature = st.sidebar.slider(
     'temperature', 0.0, 1.0, 0.95, step=0.01

@@ -11,12 +11,19 @@ st.set_page_config(
 
 @st.cache_resource
 def get_model():
-    model_path = "/data1/pretrained_models/chatglm-6b-20230523"
-    # peft_model_path = "/data1/wufan2/llm/experiments/wx_bilu_v2.0.3"
-    model = AutoModel.from_pretrained(model_path, trust_remote_code=True, load_in_8bit=True, device_map='auto')
-    tokenizer = AutoTokenizer.from_pretrained(model_path, trust_remote_code=True)
-    # model = PeftModel.from_pretrained(model, peft_model_path, load_in_8bit=True, device_map='auto')
+    # model_path = "/data1/pretrained_models/chatglm-6b-20230523"
+    # # peft_model_path = "/data1/wufan2/llm/experiments/wx_bilu_v2.0.3"
+    # model = AutoModel.from_pretrained(model_path, trust_remote_code=True, load_in_8bit=True, device_map='auto')
+    # tokenizer = AutoTokenizer.from_pretrained(model_path, trust_remote_code=True)
+    # # model = PeftModel.from_pretrained(model, peft_model_path, load_in_8bit=True, device_map='auto')
 
+    model_path = "/data1/pretrained_models/chatglm-6b-20230523-int4"
+    import sys
+    sys.path.append("./")
+    from models.chatglm.modeling_chatglm import ChatGLMForConditionalGeneration
+    from models.chatglm.tokenization_chatglm import ChatGLMTokenizer
+    tokenizer = ChatGLMTokenizer.from_pretrained(model_path)
+    model = ChatGLMForConditionalGeneration.from_pretrained(model_path).half().cuda()
     model = model.eval()
     return tokenizer, model
 
@@ -53,7 +60,7 @@ max_length = st.sidebar.slider(
     'max_length', 0, 4096, 2048, step=1
 )
 top_p = st.sidebar.slider(
-    'top_p', 0.0, 1.0, 0.6, step=0.01
+    'top_p', 0.0, 1.0, 0.9, step=0.01
 )
 temperature = st.sidebar.slider(
     'temperature', 0.0, 1.0, 0.95, step=0.01
