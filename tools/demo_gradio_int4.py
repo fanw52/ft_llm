@@ -18,7 +18,9 @@ def get_model():
     # tokenizer = AutoTokenizer.from_pretrained(model_path, trust_remote_code=True)
     # model = AutoModel.from_pretrained(model_path, trust_remote_code=True).half().cuda()
 
-    model_path = "/data1/pretrained_models/chatglm-6b-20230523-wx-lora-int4"
+    # model_path = "/data1/pretrained_models/chatglm-6b-20230523-wx-lora-int4"
+    model_path = "/data1/pretrained_models/chatglm-6b-20230523-wx-lora-int4-v2.0.4"
+
     import sys
     sys.path.append("./")
     from models.chatglm.modeling_chatglm import ChatGLMForConditionalGeneration

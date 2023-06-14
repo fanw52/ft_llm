@@ -1,8 +1,11 @@
+import sys
+import time
+
 import jsonlines
-from peft import PeftModel
 from tqdm import tqdm
 from transformers import set_seed
-import time
+
+sys.path.append("./")
 from models.chatglm.modeling_chatglm import ChatGLMForConditionalGeneration
 from models.chatglm.tokenization_chatglm import ChatGLMTokenizer
 
@@ -11,23 +14,23 @@ from models.chatglm.tokenization_chatglm import ChatGLMTokenizer
 # peft_path = "/data/wufan/llm/experiments/wx_bilu_v2.0.3/chatglm-6b-lora-wx-1e-5"
 
 model_path = "/data1/pretrained_models/chatglm-6b-20230523"
-peft_path = "/data1/wufan2/llm/experiments/wx_bilu_v2.0.3"
+# peft_path = "/data1/wufan2/llm/experiments/wx_bilu_v2.0.3"
 peft_path = "/data1/wufan2/llm/experiments/wx_bilu_v2.0.4"
 
-set_seed(0)
-tokenizer = ChatGLMTokenizer.from_pretrained(model_path)
-model = ChatGLMForConditionalGeneration.from_pretrained(model_path,device_map="auto")
-model = PeftModel.from_pretrained(model, peft_path,device_map="auto")
-model.half()
-model.eval()
+# model_path = "/data1/pretrained_models/chatglm-6b-20230523-wx-lora-int4-v2.0.4"
 
+set_seed(0)
+
+tokenizer = ChatGLMTokenizer.from_pretrained(model_path)
+model = ChatGLMForConditionalGeneration.from_pretrained(model_path).half().cuda()
+model = model.eval()
 path = "/data1/wufan/data/wx_bilu_aug/val_aug_0609.json"
 out_path = "/data1/wufan/data/wx_bilu_aug/val_aug_0609_top200.json"
 
 result = []
 c = 0
 
-st  = time.time()
+st = time.time()
 with jsonlines.open(path) as reader:
     for line in tqdm(reader):
         in_text = line["input"]
@@ -46,10 +49,10 @@ with jsonlines.open(path) as reader:
         print(answer)
         line["answer"] = answer
         result.append(line)
-        if len(result)==2000:
+        if len(result) == 2000:
             break
 
-print("总时间消耗",time.time()-st)
+print("总时间消耗", time.time() - st)
 
 with jsonlines.open(out_path, 'w') as w:
     for line in result:

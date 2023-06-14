@@ -34,7 +34,7 @@ if __name__ == '__main__':
     path = "/data1/wufan2/llm/ft_llm/output/val_aug_0531_top2000_int4.json"
     # path = "/data1/wufan2/llm/ft_llm/output/val_aug_0531_top500_int4.json"
     path = "/data1/wufan2/llm/ft_llm/output/val_aug_0531_top2000_fp16.json"
-
+    path = "/data1/wufan/data/wx_bilu_aug/val_aug_0609_top2000.json"
     decoded_preds = []
     decoded_labels = []
     with jsonlines.open(path) as reader:
