@@ -4,9 +4,7 @@ import jsonlines
 
 unorder_relation_list = ["兄弟姐妹", "其他亲属", "同事", "同窗", "喜欢", "恋爱", "朋友",
                          "未婚配偶", "社会关系", "离异配偶", "配偶", "师生", "影子实体"]
-
-
-
+unorder_relation_list = []
 
 def process_relation_pair(pair, relation):
     if relation in unorder_relation_list:
@@ -51,7 +49,9 @@ def text2structure(text, special="未找到上述关系的三元组"):
 if __name__ == '__main__':
 
     eval_file = "/data/wufan/data/NERData/relation/数据汇总/实验数据/人人关系/实验数据/chatglm_relation_p2p_fine_grit_v2_v0.6/valid_chatglm.json"
-
+    eval_file = "/data/wufan/experiments/llm/chatglm/relation_p2p/p2p_relation_v1.1.0/valid.json"
+    # eval_file = "/data/wufan/experiments/llm/chatglm/relation_p2p/p2p_relation_v1.1.1/valid.json"
+    # eval_file = "/data/wufan/experiments/llm/chatglm/relation_p2p/p2p_relation_v1.1.2/valid.json"
     all_num_tp, all_num_fp, all_num_fn = 0, 0, 0
     with jsonlines.open(eval_file) as reader:
         for line in reader:

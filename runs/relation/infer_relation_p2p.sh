@@ -1,0 +1,3 @@
+PYTHONPATH=. CUDA_VISIBLE_DEVICES=0 python tools/relation/infer_relation_p2p.py --experiment_name p2p_relation_v1.1.0 --checkpoint_step 3000
+PYTHONPATH=. CUDA_VISIBLE_DEVICES=0 python tools/relation/infer_relation_p2p.py --experiment_name p2p_relation_v1.1.1 --checkpoint_step 3000
+PYTHONPATH=. CUDA_VISIBLE_DEVICES=0 python tools/relation/infer_relation_p2p.py --experiment_name p2p_relation_v1.1.2 --checkpoint_step 2000

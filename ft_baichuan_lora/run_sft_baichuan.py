@@ -30,18 +30,18 @@ from datasets import load_dataset
 from nltk.translate.bleu_score import sentence_bleu, SmoothingFunction
 from peft import PeftModel, LoraConfig, TaskType, get_peft_model
 from rouge_chinese import Rouge
-from transformers import (
-    DataCollatorForSeq2Seq,
-    HfArgumentParser,
-    Seq2SeqTrainingArguments,
-    set_seed
-)
 
 sys.path.append("./")
 from arguments import ModelArguments, DataTrainingArguments
-from models.chatglm.configuration_chatglm import ChatGLMConfig
-from models.chatglm.modeling_chatglm import ChatGLMForConditionalGeneration
-from models.chatglm.tokenization_chatglm import ChatGLMTokenizer
+from models.baichuan.tokenization_baichuan import BaiChuanTokenizer
+from models.baichuan.modeling_baichuan import BaiChuanForCausalLM
+from transformers import (
+    AutoConfig,
+    DataCollatorForSeq2Seq,
+    HfArgumentParser,
+    Seq2SeqTrainingArguments,
+    set_seed,
+)
 from trainer.trainer_seq2seq import Seq2SeqTrainer
 
 logger = logging.getLogger(__name__)
@@ -85,13 +85,10 @@ def main():
     data_files = {}
     if data_args.train_file is not None:
         data_files["train"] = data_args.train_file
-        #extension = data_args.train_file.split(".")[-1]
     if data_args.validation_file is not None:
         data_files["validation"] = data_args.validation_file
-        #extension = data_args.validation_file.split(".")[-1]
     if data_args.test_file is not None:
         data_files["test"] = data_args.test_file
-        #extension = data_args.test_file.split(".")[-1]
 
     raw_datasets = load_dataset(
         "json",
@@ -102,21 +99,23 @@ def main():
     logger.info(f"raw_datasets: {raw_datasets}")
     # print("raw_datasets: ", len(raw_datasets["train"]))
 
-    # Load pretrained model and tokenizer
-    config = ChatGLMConfig.from_pretrained(
+    # Load pretrained model and
+    config = AutoConfig.from_pretrained(
         model_args.model_name_or_path,
-        # trust_remote_code=True
+        trust_remote_code=True
     )
     config.pre_seq_len = model_args.pre_seq_len
     config.prefix_projection = model_args.prefix_projection
 
-    tokenizer = ChatGLMTokenizer.from_pretrained(model_args.model_name_or_path,
-                                                 # trust_remote_code=True
-                                                 )
-    model = ChatGLMForConditionalGeneration.from_pretrained(model_args.model_name_or_path, config=config).half().cuda()
-
-    # for n, p in model.named_parameters():
-    #     print(n, p.requires_grad)
+    tokenizer = BaiChuanTokenizer.from_pretrained(
+        model_args.model_name_or_path
+    )
+    # TODO: 预训练代码中未初始化pad_token
+    tokenizer.pad_token = tokenizer.unk_token
+    model = BaiChuanForCausalLM.from_pretrained(
+        model_args.model_name_or_path,
+        config=config,
+    ).half().cuda()
 
     if model_args.peft_path is not None:
         logger.info("Peft from pre-trained model")
@@ -216,24 +215,27 @@ def main():
                     prompt = ""
                     history = examples[history_column][i]
                     for turn_idx, (old_query, response) in enumerate(history):
-                        prompt += "[Round {}]\n问：{}\n答：{}\n".format(turn_idx, old_query, response)
-                    prompt += "[Round {}]\n问：{}\n答：".format(len(history), query)
+                        prompt += "问：{}\n答：{}\n".format(turn_idx, old_query, response)
+                    prompt += "问：{}\n答：".format(len(history), query)
 
-                prompt = prefix + prompt
-                a_ids = tokenizer.encode(text=prompt, add_special_tokens=False)
-                b_ids = tokenizer.encode(text=answer, add_special_tokens=False)
+                # 手动添加eos
+                tokenized_sources = tokenizer.encode(prompt, add_special_tokens=False)
+                tokenized_targets = tokenizer.encode(answer, add_special_tokens=False)
 
-                if len(a_ids) > data_args.max_source_length - 1:
-                    a_ids = a_ids[: data_args.max_source_length - 1]
+                # 需要保证在tokenized_sources最前面添加bos
+                if len(tokenized_sources) > data_args.max_source_length - 1:
+                    tokenized_sources = tokenized_sources[: data_args.max_source_length - 1]
 
-                if len(b_ids) > data_args.max_target_length - 2:
-                    b_ids = b_ids[: data_args.max_target_length - 2]
+                # 需要在tokenized_targets的首尾添加bos和eos
+                if len(tokenized_targets) > data_args.max_target_length - 2:
+                    tokenized_targets = tokenized_targets[: data_args.max_target_length - 2]
 
-                input_ids = tokenizer.build_inputs_with_special_tokens(a_ids, b_ids)
+                input_ids = tokenized_sources
+                context_length = len(input_ids)
+                if len(tokenized_targets):
+                    input_ids = input_ids + [tokenizer.bos_token_id] + tokenized_targets + [tokenizer.eos_token_id]
 
-                context_length = input_ids.index(tokenizer.bos_token_id)
-                mask_position = context_length - 1
-                labels = [-100] * context_length + input_ids[mask_position + 1:]
+                labels = [-100] * (context_length) + input_ids[context_length:]
 
                 pad_len = max_seq_length - len(input_ids)
                 input_ids = input_ids + [tokenizer.pad_token_id] * pad_len
@@ -242,6 +244,19 @@ def main():
                 if data_args.ignore_pad_token_for_loss:
                     labels = [(l if l != tokenizer.pad_token_id else -100) for l in labels]
 
+                '''
+                input_ids: [1, 31106, 6971, 13502, 1, 31106, 33211, 31239, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2]
+                labels: [-100, -100, -100, -100, 1, 31106, 33211, 31239, -100, -100, -100, -100, -100, -100, -100, -100, -100, -100, -100, -100]
+                计算损失时：
+                shift_logits = logits[..., :-1, :].contiguous()
+                shift_labels = labels[..., 1:].contiguous()
+                这就使得：
+                logits: [1, 31106, 6971, 13502, 1, 31106, 33211, 31239, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2]
+                labels: [-100, -100, -100, 1, 31106, 33211, 31239, -100, -100, -100, -100, -100, -100, -100, -100, -100, -100, -100, -100]
+                输入13502预测1
+                下个step输入1预测31106
+                '''
+                assert len(input_ids) == len(labels)
                 model_inputs["input_ids"].append(input_ids)
                 model_inputs["labels"].append(labels)
 
@@ -251,7 +266,8 @@ def main():
         logger.info(f"input_ids: {example['input_ids']}")
         logger.info(f"inputs: {tokenizer.decode(example['input_ids'])}")
         logger.info(f"label_ids: {example['labels']}")
-        logger.info(f"labels: {tokenizer.decode(example['labels'])}")
+        # TODO: 使用eos充当pad，解码时存在一点问题
+        # logger.info(f"labels: {tokenizer.decode(example['labels'],skip_special_tokens=True)}")
 
     if training_args.do_train:
         if "train" not in raw_datasets:
@@ -286,7 +302,7 @@ def main():
                 batched=True,
                 num_proc=data_args.preprocessing_num_workers,
                 remove_columns=column_names,
-                load_from_cache_file=not data_args.overwrite_cache,
+                load_from_cache_file=True,
                 desc="Running tokenizer on validation dataset",
             )
         print_dataset_example(eval_dataset[0])
@@ -306,7 +322,7 @@ def main():
                 batched=True,
                 num_proc=data_args.preprocessing_num_workers,
                 remove_columns=column_names,
-                load_from_cache_file=not data_args.overwrite_cache,
+                load_from_cache_file=False,
                 desc="Running tokenizer on prediction dataset",
             )
         print_dataset_example(predict_dataset[0])

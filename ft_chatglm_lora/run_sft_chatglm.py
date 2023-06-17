@@ -30,19 +30,18 @@ from datasets import load_dataset
 from nltk.translate.bleu_score import sentence_bleu, SmoothingFunction
 from peft import PeftModel, LoraConfig, TaskType, get_peft_model
 from rouge_chinese import Rouge
-
-sys.path.append("./")
-from arguments import ModelArguments, DataTrainingArguments
-
 from transformers import (
-    AutoConfig,
-    AutoModelForCausalLM,
-    AutoTokenizer,
     DataCollatorForSeq2Seq,
     HfArgumentParser,
     Seq2SeqTrainingArguments,
-    set_seed,
+    set_seed
 )
+
+sys.path.append("./")
+from arguments import ModelArguments, DataTrainingArguments
+from models.chatglm.configuration_chatglm import ChatGLMConfig
+from models.chatglm.modeling_chatglm import ChatGLMForConditionalGeneration
+from models.chatglm.tokenization_chatglm import ChatGLMTokenizer
 from trainer.trainer_seq2seq import Seq2SeqTrainer
 
 logger = logging.getLogger(__name__)
@@ -86,13 +85,13 @@ def main():
     data_files = {}
     if data_args.train_file is not None:
         data_files["train"] = data_args.train_file
-        #extension = data_args.train_file.split(".")[-1]
+        # extension = data_args.train_file.split(".")[-1]
     if data_args.validation_file is not None:
         data_files["validation"] = data_args.validation_file
-        #extension = data_args.validation_file.split(".")[-1]
+        # extension = data_args.validation_file.split(".")[-1]
     if data_args.test_file is not None:
         data_files["test"] = data_args.test_file
-        #extension = data_args.test_file.split(".")[-1]
+        # extension = data_args.test_file.split(".")[-1]
 
     raw_datasets = load_dataset(
         "json",
@@ -104,15 +103,20 @@ def main():
     # print("raw_datasets: ", len(raw_datasets["train"]))
 
     # Load pretrained model and tokenizer
-    config = AutoConfig.from_pretrained(
+    config = ChatGLMConfig.from_pretrained(
         model_args.model_name_or_path,
         # trust_remote_code=True
     )
     config.pre_seq_len = model_args.pre_seq_len
     config.prefix_projection = model_args.prefix_projection
 
-    tokenizer = AutoTokenizer.from_pretrained(model_args.model_name_or_path)
-    model = AutoModelForCausalLM.from_pretrained(model_args.model_name_or_path, config=config).half().cuda()
+    tokenizer = ChatGLMTokenizer.from_pretrained(model_args.model_name_or_path,
+                                                 # trust_remote_code=True
+                                                 )
+    model = ChatGLMForConditionalGeneration.from_pretrained(model_args.model_name_or_path, config=config).half().cuda()
+
+    # for n, p in model.named_parameters():
+    #     print(n, p.requires_grad)
 
     if model_args.peft_path is not None:
         logger.info("Peft from pre-trained model")
@@ -282,7 +286,7 @@ def main():
                 batched=True,
                 num_proc=data_args.preprocessing_num_workers,
                 remove_columns=column_names,
-                load_from_cache_file=True,
+                load_from_cache_file=not data_args.overwrite_cache,
                 desc="Running tokenizer on validation dataset",
             )
         print_dataset_example(eval_dataset[0])
@@ -302,7 +306,7 @@ def main():
                 batched=True,
                 num_proc=data_args.preprocessing_num_workers,
                 remove_columns=column_names,
-                load_from_cache_file=False,
+                load_from_cache_file=not data_args.overwrite_cache,
                 desc="Running tokenizer on prediction dataset",
             )
         print_dataset_example(predict_dataset[0])

@@ -153,6 +153,15 @@ class DataTrainingArguments:
         default=None,
         metadata={"help": "The number of processes to use for the preprocessing."},
     )
+    max_length: Optional[int] = field(
+        default=2048,
+        metadata={
+            "help": (
+                "The maximum total train sequence length after tokenization. Sequences longer "
+                "than this will be truncated, sequences shorter will be padded."
+            )
+        },
+    )
     max_source_length: Optional[int] = field(
         default=1024,
         metadata={
