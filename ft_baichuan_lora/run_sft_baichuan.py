@@ -156,23 +156,23 @@ def main():
         return
 
     # Get the column names for input/target.
-    prompt_column = data_args.prompt_column
+    input_column = data_args.input_column
     response_column = data_args.response_column
     history_column = data_args.history_column
-
+    instruction_column = data_args.instruction_column
     # Temporarily set max_target_length for training.
     max_target_length = data_args.max_target_length
 
     def preprocess_function_eval(examples):
         inputs, targets = [], []
-        for i in range(len(examples[prompt_column])):
+        for i in range(len(examples[instruction_column])):
             if not examples[response_column][i]:
                 targets.append("filled in !")
             else:
                 targets.append(examples[response_column][i])
 
-            if examples[prompt_column][i]:
-                query = examples[prompt_column][i]
+            if examples[instruction_column][i]:
+                query = examples[instruction_column][i]
                 if history_column is None or len(examples[history_column][i]) == 0:
                     prompt = query
                 else:
@@ -205,18 +205,19 @@ def main():
             "input_ids": [],
             "labels": [],
         }
-        for i in range(len(examples[prompt_column])):
-            if examples[prompt_column][i] and examples[response_column][i]:
-                query, answer = examples[prompt_column][i], examples[response_column][i]
+        for i in range(len(examples[instruction_column])):
+            if examples[instruction_column][i] and examples[response_column][i]:
+                instruction, input, answer = examples[instruction_column][i], examples[input_column][i], \
+                                             examples[response_column][i]
 
                 if history_column is None:
-                    prompt = query
+                    prompt = instruction+input
                 else:
                     prompt = ""
                     history = examples[history_column][i]
                     for turn_idx, (old_query, response) in enumerate(history):
                         prompt += "问：{}\n答：{}\n".format(turn_idx, old_query, response)
-                    prompt += "问：{}\n答：".format(len(history), query)
+                    prompt += "问：{}\n答：".format(len(history), instruction+input)
 
                 # 手动添加eos
                 tokenized_sources = tokenizer.encode(prompt, add_special_tokens=False)
