@@ -21,16 +21,15 @@ torchrun \
     --instruction_column instruction \
     --input_column input \
     --response_column output \
-    --overwrite_cache \
     --model_name_or_path $model_name_or_path \
     --output_dir $your_checkpopint_path/PromptCBLUE-chatglm-6b-lora-$LR \
     --overwrite_output_dir \
     --max_source_length 256 \
     --max_target_length 384 \
-    --per_device_train_batch_size 16 \
+    --per_device_train_batch_size 32 \
     --per_device_eval_batch_size 4 \
     --gradient_accumulation_steps 1 \
-    --max_steps 10000 \
+    --max_steps 20000 \
     --logging_steps 10 \
     --save_steps 1000 \
     --save_total_limit 2 \

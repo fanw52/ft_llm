@@ -111,7 +111,7 @@ def main():
         model_args.model_name_or_path
     )
     # TODO: 预训练代码中未初始化pad_token
-    tokenizer.pad_token = tokenizer.unk_token
+    tokenizer.pad_token = tokenizer.bos_token
     model = BaiChuanForCausalLM.from_pretrained(
         model_args.model_name_or_path,
         config=config,
@@ -211,21 +211,20 @@ def main():
                                              examples[response_column][i]
 
                 if history_column is None:
-                    prompt = instruction+input
+                    prompt = instruction + input
                 else:
                     prompt = ""
                     history = examples[history_column][i]
                     for turn_idx, (old_query, response) in enumerate(history):
                         prompt += "问：{}\n答：{}\n".format(turn_idx, old_query, response)
-                    prompt += "问：{}\n答：".format(len(history), instruction+input)
+                    prompt += "问：{}\n答：".format(len(history), instruction + input)
 
                 # 手动添加eos
                 tokenized_sources = tokenizer.encode(prompt, add_special_tokens=False)
                 tokenized_targets = tokenizer.encode(answer, add_special_tokens=False)
 
-                # 需要保证在tokenized_sources最前面添加bos
-                if len(tokenized_sources) > data_args.max_source_length - 1:
-                    tokenized_sources = tokenized_sources[: data_args.max_source_length - 1]
+                if len(tokenized_sources) > data_args.max_source_length:
+                    tokenized_sources = tokenized_sources[: data_args.max_source_length]
 
                 # 需要在tokenized_targets的首尾添加bos和eos
                 if len(tokenized_targets) > data_args.max_target_length - 2:
@@ -236,14 +235,15 @@ def main():
                 if len(tokenized_targets):
                     input_ids = input_ids + [tokenizer.bos_token_id] + tokenized_targets + [tokenizer.eos_token_id]
 
-                labels = [-100] * (context_length) + input_ids[context_length:]
+                # labels = [-100] * (context_length) + input_ids[context_length:]
 
                 pad_len = max_seq_length - len(input_ids)
                 input_ids = input_ids + [tokenizer.pad_token_id] * pad_len
-                labels = labels + [tokenizer.pad_token_id] * pad_len
-
-                if data_args.ignore_pad_token_for_loss:
-                    labels = [(l if l != tokenizer.pad_token_id else -100) for l in labels]
+                # labels = labels + [tokenizer.pad_token_id] * pad_len
+                labels = [-100] * context_length + [tokenizer.bos_token_id] + tokenized_targets + [
+                    tokenizer.eos_token_id] + [-100] * pad_len
+                # if data_args.ignore_pad_token_for_loss:
+                #     labels = [(l if l != tokenizer.pad_token_id else -100) for l in labels]
 
                 '''
                 input_ids: [1, 31106, 6971, 13502, 1, 31106, 33211, 31239, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2]
@@ -330,7 +330,8 @@ def main():
         print_dataset_example(predict_dataset[1])
 
     # Data collator
-    label_pad_token_id = -100 if data_args.ignore_pad_token_for_loss else tokenizer.pad_token_id
+    # label_pad_token_id = -100 if data_args.ignore_pad_token_for_loss else tokenizer.pad_token_id
+    label_pad_token_id = -100
     data_collator = DataCollatorForSeq2Seq(
         tokenizer,
         model=model,

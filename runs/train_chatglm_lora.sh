@@ -19,7 +19,7 @@ torchrun \
     --train_file $your_data_path/train.json \
     --validation_file $your_data_path/dev.json \
     --cache_dir $your_data_path \
-    --prompt_column input \
+    --input_column input \
     --response_column target \
     --overwrite_cache \
     --model_name_or_path $model_name_or_path \

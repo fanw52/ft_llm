@@ -157,10 +157,10 @@ def main():
         return
 
     # Get the column names for input/target.
-    prompt_column = data_args.prompt_column
+    prompt_column = data_args.input_column
     response_column = data_args.response_column
     history_column = data_args.history_column
-
+    instruction_column = data_args.instruction_column
     # Temporarily set max_target_length for training.
     max_target_length = data_args.max_target_length
 
