@@ -18,6 +18,7 @@ def get_model():
     # # model = PeftModel.from_pretrained(model, peft_model_path, load_in_8bit=True, device_map='auto')
 
     model_path = "/data1/pretrained_models/chatglm-6b-20230523-int4"
+    model_path = "/data1/pretrained_models/chatglm-6b-int4"
     import sys
     sys.path.append("./")
     from models.chatglm.modeling_chatglm import ChatGLMForConditionalGeneration

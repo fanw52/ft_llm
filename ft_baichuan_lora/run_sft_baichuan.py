@@ -111,7 +111,7 @@ def main():
         model_args.model_name_or_path
     )
     # TODO: 预训练代码中未初始化pad_token
-    tokenizer.pad_token = tokenizer.bos_token
+    tokenizer.pad_token = tokenizer.unk_token
     model = BaiChuanForCausalLM.from_pretrained(
         model_args.model_name_or_path,
         config=config,
