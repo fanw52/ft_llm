@@ -3,7 +3,7 @@ from streamlit_chat import message
 # from transformers import AutoModel, AutoTokenizer
 
 st.set_page_config(
-    page_title="大模型演示",
+    page_title="chatglm微调大模型演示",
     page_icon=":robot:"
 )
 

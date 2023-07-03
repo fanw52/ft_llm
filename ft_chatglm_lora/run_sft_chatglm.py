@@ -39,9 +39,7 @@ from transformers import (
 
 sys.path.append("./")
 from arguments import ModelArguments, DataTrainingArguments
-from models.chatglm.configuration_chatglm import ChatGLMConfig
-from models.chatglm.modeling_chatglm import ChatGLMForConditionalGeneration
-from models.chatglm.tokenization_chatglm import ChatGLMTokenizer
+
 from trainer.trainer_seq2seq import Seq2SeqTrainer
 
 logger = logging.getLogger(__name__)
@@ -101,6 +99,16 @@ def main():
     )
     logger.info(f"raw_datasets: {raw_datasets}")
     # print("raw_datasets: ", len(raw_datasets["train"]))
+    if model_args.chatglm2:
+        logger.info(">>>>>>>>>>>>>>>>>>加载chatglm2模型>>>>>>>>>>>>>>>>>>>>>>>>")
+        from models.chatglm2.configuration_chatglm import ChatGLMConfig
+        from models.chatglm2.modeling_chatglm import ChatGLMForConditionalGeneration
+        from models.chatglm2.tokenization_chatglm import ChatGLMTokenizer
+    else:
+        logger.info(">>>>>>>>>>>>>>>>>>加载chatglm模型>>>>>>>>>>>>>>>>>>>>>>>>")
+        from models.chatglm.configuration_chatglm import ChatGLMConfig
+        from models.chatglm.modeling_chatglm import ChatGLMForConditionalGeneration
+        from models.chatglm.tokenization_chatglm import ChatGLMTokenizer
 
     # Load pretrained model and tokenizer
     config = ChatGLMConfig.from_pretrained(
@@ -157,23 +165,24 @@ def main():
         return
 
     # Get the column names for input/target.
-    prompt_column = data_args.input_column
+    instruction_column = data_args.instruction_column
+    input_column = data_args.input_column
     response_column = data_args.response_column
     history_column = data_args.history_column
-    instruction_column = data_args.instruction_column
+
     # Temporarily set max_target_length for training.
     max_target_length = data_args.max_target_length
 
     def preprocess_function_eval(examples):
         inputs, targets = [], []
-        for i in range(len(examples[prompt_column])):
+        for i in range(len(examples[instruction_column])):
             if not examples[response_column][i]:
                 targets.append("filled in !")
             else:
                 targets.append(examples[response_column][i])
 
-            if examples[prompt_column][i]:
-                query = examples[prompt_column][i]
+            if examples[instruction_column][i]:
+                query = examples[instruction_column][i]
                 if history_column is None or len(examples[history_column][i]) == 0:
                     prompt = query
                 else:
@@ -206,18 +215,21 @@ def main():
             "input_ids": [],
             "labels": [],
         }
-        for i in range(len(examples[prompt_column])):
-            if examples[prompt_column][i] and examples[response_column][i]:
-                query, answer = examples[prompt_column][i], examples[response_column][i]
+        for i in range(len(examples[instruction_column])):
+            if examples[instruction_column][i] and examples[response_column][i]:
+
+                instruction = examples[instruction_column][i]
+                answer = examples[response_column][i]
+                input = examples[input_column][i]
 
                 if history_column is None:
-                    prompt = query
+                    prompt = instruction + input
                 else:
                     prompt = ""
                     history = examples[history_column][i]
                     for turn_idx, (old_query, response) in enumerate(history):
                         prompt += "[Round {}]\n问：{}\n答：{}\n".format(turn_idx, old_query, response)
-                    prompt += "[Round {}]\n问：{}\n答：".format(len(history), query)
+                    prompt += "[Round {}]\n问：{}\n答：".format(len(history), instruction + input)
 
                 prompt = prefix + prompt
                 a_ids = tokenizer.encode(text=prompt, add_special_tokens=False)
@@ -229,9 +241,14 @@ def main():
                 if len(b_ids) > data_args.max_target_length - 2:
                     b_ids = b_ids[: data_args.max_target_length - 2]
 
-                input_ids = tokenizer.build_inputs_with_special_tokens(a_ids, b_ids)
+                # v1和v2版本合并数据的方式有一些差异
+                if model_args.chatglm2:
+                    input_ids = tokenizer.build_inputs_with_special_tokens(a_ids, b_ids)
+                    context_length = len(tokenizer.build_inputs_with_special_tokens(a_ids))
+                else:
+                    input_ids = tokenizer.build_inputs_with_special_tokens(a_ids, b_ids)
+                    context_length = input_ids.index(tokenizer.bos_token_id)
 
-                context_length = input_ids.index(tokenizer.bos_token_id)
                 mask_position = context_length - 1
                 labels = [-100] * context_length + input_ids[mask_position + 1:]
 

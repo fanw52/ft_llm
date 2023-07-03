@@ -11,15 +11,15 @@ all_relation = ['儿子', '兄弟姐妹', '兄弟姐妹的配偶', '其他亲属
 all_relation_tail = ["兄弟姐妹的配偶", "其他亲属", "同事", "同窗", "喜欢", "子女的配偶", "孙子女或曾孙子女", "朋友", "未婚配偶", "父母",
                      "祖父母或曾祖父母或外祖父母", "离异配偶", "配偶的父母"]
 # TODO: 修改use_sample，num_relaiotn_sample
-use_sample = True
+use_sample = False
 num_relaiotn_sample = 17
 np.random.seed(0)
 random.seed(0)
 all_relation = sorted(all_relation)
 
 # TODO：修改输入输出路径
-path = "/data/wufan/data/NERData/relation/数据汇总/实验数据/人人关系/实验数据/relation_p2p_fine_grit_v2_v0.6/train_add_tail.jsonl"
-output_path = "/data/wufan/data/NERData/relation/数据汇总/实验数据/人人关系/实验数据/chatglm_relation_p2p_fine_grit_v2_v0.6/train_add_tail_do_sample.json"
+path = "/data/wufan/data/relation/train_add_tail.jsonl"
+output_path = "/data/wufan/data/relation/train_add_tail_generate.json"
 # use_sample = False时保持
 output_raw_path = "/data/wufan/data/NERData/relation/数据汇总/实验数据/人人关系/实验数据/relation_p2p_fine_grit_v2_v0.6/train_add_tail.json"
 

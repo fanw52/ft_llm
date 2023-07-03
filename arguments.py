@@ -102,6 +102,7 @@ class ModelArguments:
         metadata={"help": "Quantization data type to use. Should be one of `fp4` or `nf4`."}
     )
     qlora: Optional[bool] = field(default=False)
+    chatglm2: Optional[bool] = field(default=True)
 
 @dataclass
 class DataTrainingArguments:

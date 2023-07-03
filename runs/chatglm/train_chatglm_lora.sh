@@ -2,25 +2,37 @@ lora_rank=8
 lora_trainable="query_key_value,dense,dense_h_to_4h,dense_4h_to_h"
 modules_to_save="null"
 lora_dropout=0.1
-LR=2e-4
-model_name_or_path="/data/wufan/llm/model/chatglm-6b"   # LLM底座模型路径，或者是huggingface hub上的模型名称
-your_data_path="/data/wufan/llm/PromptCBLUE/datasets/PromptCBLUE/toy_examples"  # 填入数据集所在的文件夹路径
-your_checkpopint_path="./experiments/toy_examples_v1.0.0/"  # 填入用来存储模型的路径
+LR=2e-5
+#model_name_or_path="/data/wufan/llm/model/chatglm-6b"   # LLM底座模型路径，或者是huggingface hub上的模型名称
 
-peft_path=""  # 如果之前训练过，且存储了peft权重，则设置为peft权重的文件夹路径
+# a40###
+model_name_or_path="/data/pretrained_models/chatglm-6b-20230524"
+model_name_or_path="/data/pretrained_models/chatglm2-6b-20230625"
+
+your_data_path="/data/wufan/data/BELLE"
+######
+
+# v100s
+model_name_or_path="/data/pretrained_models/chatglm-6b-20230523"
+your_data_path="/data/wufan/data/BELLE"
+
+# 在当前配置下a40上减少40h训练时间,chatglm35G,178h,chatglm2占用27G，132h,训练时间上减少了25%左右，显存上减少23%
+
+your_checkpopint_path="./experiments/toy_examples_v1.0.0/"
 deepspeed_config_file=./configs/deepspeed_config_zero2_offload.json
 
 torchrun \
     --nnodes 1 \
-    --nproc_per_node 1 \
+    --nproc_per_node 4 \
     ft_chatglm_lora/run_sft_chatglm.py \
     --deepspeed ${deepspeed_config_file} \
     --do_train \
     --train_file $your_data_path/train.json \
-    --validation_file $your_data_path/dev.json \
     --cache_dir $your_data_path \
+    --chatglm2 False \
+    --instruction_column instruction \
     --input_column input \
-    --response_column target \
+    --response_column output \
     --overwrite_cache \
     --model_name_or_path $model_name_or_path \
     --output_dir $your_checkpopint_path/PromptCBLUE-chatglm-6b-lora-$LR \
@@ -33,11 +45,13 @@ torchrun \
     --max_steps 10000 \
     --logging_steps 10 \
     --save_steps 300 \
+    --save_total_limit 1 \
     --learning_rate $LR \
     --lora_rank ${lora_rank} \
     --trainable ${lora_trainable} \
     --modules_to_save ${modules_to_save} \
-    --lora_dropout ${lora_dropout}
+    --lora_dropout ${lora_dropout} \
+    --fp16
 
 
 
