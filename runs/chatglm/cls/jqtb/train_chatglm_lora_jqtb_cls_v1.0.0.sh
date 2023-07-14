@@ -17,15 +17,17 @@ deepspeed_config_file=./configs/deepspeed_config_zero2_offload.json
 torchrun \
     --nnodes 1 \
     --nproc_per_node 1 \
-    ft_chatglm_lora/main.py \
+    --master_port=29601 \
+    ft_chatglm_lora/run_sft_chatglm.py \
     --do_train \
     --deepspeed ${deepspeed_config_file} \
     --do_train \
-    --train_file $your_data_path/train.json \
-    --validation_file $your_data_path/valid.json \
+    --chatglm2 False \
+    --train_file $your_data_path/trainv2.json \
     --cache_dir $your_data_path/data_cache \
     --overwrite_cache \
-    --prompt_column input \
+    --instruction_column instruction \
+    --input_column input \
     --response_column target \
     --model_name_or_path $model_name_or_path \
     --output_dir $your_checkpopint_path/chatglm-6b-lora-wx-$LR \
@@ -38,7 +40,7 @@ torchrun \
     --max_steps 3000 \
     --save_total_limit 1 \
     --logging_steps 1 \
-    --save_steps 1000 \
+    --save_steps 10000 \
     --learning_rate $LR \
     --lora_rank ${lora_rank} \
     --trainable ${lora_trainable} \

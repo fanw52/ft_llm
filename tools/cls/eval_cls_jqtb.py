@@ -32,7 +32,7 @@ def text2structure(text, special="上述句子中不包含选项中的事件类�
             for cls_str in cls_list:
                 cls_str = cls_str.replace("，",",")
                 cls_str = cls_str.replace("。","")
-                cls_str = cls_str.replace("、",",")
+                # cls_str = cls_str.replace("、",",")
                 for cls in cls_str.split(","):
                     if cls in all_cls_list:
                         structure.add(cls)
@@ -48,6 +48,8 @@ if __name__ == '__main__':
     eval_file = "/data/wufan/experiments/llm/chatglm/cls_jqtb/cls_jqtb_v1.0.0/valid.json"
     eval_file = "/data/wufan/experiments/llm/baichuan/cls_jqtb_v1.0.0/valid.json"
     eval_file = "/data/wufan/experiments/llm/chatglm/cls_jqtb/valid_chatgpt.json"
+
+    eval_file = "/data/wufan/experiments/llm/chatglm2/cls_jqtb/cls_jqtb_v1.0.0/valid.json"
     all_num_tp, all_num_fp, all_num_fn = 0, 0, 0
     with jsonlines.open(eval_file) as reader:
         for line in reader:

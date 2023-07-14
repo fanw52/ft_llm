@@ -5,7 +5,7 @@ import jsonlines
 from tqdm import tqdm
 from transformers import set_seed
 
-sys.path.append("./")
+sys.path.append("../")
 from models.chatglm.modeling_chatglm import ChatGLMForConditionalGeneration
 from models.chatglm.tokenization_chatglm import ChatGLMTokenizer
 
@@ -20,7 +20,9 @@ peft_path = "/data1/wufan2/llm/experiments/wx_bilu_v2.0.4"
 # model_path = "/data1/pretrained_models/chatglm-6b-20230523-wx-lora-int4-v2.0.4"
 
 set_seed(0)
-
+import json
+x = {"data": 1}
+json.dumps(x,ensure_ascii=False,indent=2)
 tokenizer = ChatGLMTokenizer.from_pretrained(model_path)
 model = ChatGLMForConditionalGeneration.from_pretrained(model_path).half().cuda()
 model = model.eval()

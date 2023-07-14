@@ -73,7 +73,7 @@ prompt = "给200个警务方面的同义词对"
 prompt = "给200个警务方面的包含罪名的同义词对"
 result = []
 
-for i in range(50):
+for i in range(1):
     try:
         response = openai.ChatCompletion.create(
             model="gpt-3.5-turbo",
