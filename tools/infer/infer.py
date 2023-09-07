@@ -1,21 +1,22 @@
 import torch
 
-from models.chatglm.modeling_chatglm import ChatGLMForConditionalGeneration
-from models.chatglm.tokenization_chatglm import ChatGLMTokenizer
+from models.chatglm2.modeling_chatglm import ChatGLMForConditionalGeneration
+from models.chatglm2.tokenization_chatglm import ChatGLMTokenizer
 from transformers import AutoModel
 
-model_path = "/data1/pretrained_models/chatglm-6b-20230523"
+model_path = "/data/pretrained_models/chatglm2-6b-20230625"
+model_path = "/data/pretrained_models/llama2/"
 
 torch.cuda.reset_max_memory_allocated()
 # model = AutoModel.from_pretrained(model_path).quantize(8).half().cuda()
-model = AutoModel.from_pretrained(model_path, trust_remote_code=True)
+model = ChatGLMForConditionalGeneration.from_pretrained(model_path,device_map="auto")
 mem = torch.cuda.max_memory_allocated()
 mem = mem / 1024 / 1024 / 1024
 print(f"显存消耗:{mem:.03f}G")
 
 tokenizer = ChatGLMTokenizer.from_pretrained(model_path)
 
-in_text = "制定一份详细的五一出行计划"
+in_text = "what is your name"
 torch.cuda.reset_max_memory_allocated()
 batch = tokenizer(in_text, return_tensors="pt")
 out = model.generate(

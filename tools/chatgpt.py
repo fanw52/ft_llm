@@ -1,94 +1,62 @@
+#utf-8
 import openai
-
+import time
+from tqdm import tqdm
+import json
+import jsonlines
 # openai.api_key = "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"
 openai.api_key = "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"
 
-# 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
 
-# prompt = """明朝奸臣严嵩的儿子严世蕃每晨起身，痰唾很多，自蒙眬醒来至下床，唾壶须换去两三个。
-#
-# # 抽取句子中所有人与人之间的关系，并以json格式输出
-#
-# [{"src": "严嵩", "dst": "严世蕃", "relation": "儿子"}]
-#
-#
-#
-# 马曼琳，1992年1月9日出生于广东省潮阳，毕业于深圳广播电视大学，是腾讯创始人马化腾的女儿，任职于腾讯控股有限公司。
-#
-# # 抽取句子中所有人与人之间的关系，并以json格式输出
-#
-# [{"src": "马化腾", "dst": "马曼琳", "relation": "女儿"}]
-#
-#
-#
-# 后黄药师重收陆乘风归门，陆冠英亦得以随其父习桃花岛武功。
-#
-# # 抽取句子中所有人与人之间的关系，并以json格式输出
-#
-# [{"src": "黄药师", "dst": "陆乘风", "relation": "师生"}, {"src": "陆冠英", "dst": "陆乘风", "relation": "父母"}]
-#
-#
-#
-# 2019年9月26日6时30分左右，张俊伦因婚姻矛盾用锤子追打受害人韩艺，韩艺母亲路淑珍对其阻止
-#
-# # 抽取句子中所有人与人之间的关系，并以json格式输出
-#
-# [{"src": "韩艺", "dst": "路淑珍", "relation": "母亲"}, {"src": "张俊伦", "dst": "韩艺", "relation": "配偶"}]
-#
-#
-#
-# 林一峰（林二汶的哥哥）、林嘉欣、黄耀明、at17的另一位成员卢凯彤以及林二汶的家人朋友分别给本书写了很特别的文字。
-#
-# # 抽取句子中所有人与人之间的关系，并以json格式输出
-#
-# [{"src": "林一峰", "dst": "林二汶", "relation": "兄弟姐妹"}]
-#
-#
-#
-# 凌雪雁，容貌秀丽，喜欢张君宝，与秦思容为情敌，后来由于得不到张君宝的爱慕，与爱她的宋远桥结为恋人。
-#
-# # 抽取句子中所有人与人之间的关系，并以json格式输出
-#
-# [{"src": "凌雪雁", "dst": "宋远桥", "relation": "恋爱"}, {"src": "凌雪雁", "dst": "张君宝", "relation": "喜欢"}, {"src": "凌雪雁", "dst": "秦思容", "relation": "社会关系"}]
-#
-#
-#
-# 玛丽告诉彼得，她决定辞去工作去世界旅行。
-#
-# # 抽取句子中所有人与人之间的关系，并以json格式输出
-#
-# []
-#
-#
-#
-# 这个星期末，我们打算去旅行，一起去的有吴、张、李和王四个人，我们都很期待这次旅行的经历。
-#
-# # 抽取句子中所有人与人之间的关系，并以json格式输出
-#
-# """
-
-import json
-import time
-prompt = "给200个警务方面的同义词对"
-prompt = "给200个警务方面的包含罪名的同义词对"
 result = []
 
-for i in range(1):
-    try:
-        response = openai.ChatCompletion.create(
-            model="gpt-3.5-turbo",
-            messages=[
-                {"role": "system", "content": "You are a helpful assistant."},
-                {"role": "user", "content": prompt},
-            ],
-        )
-        print(response["choices"][0]["message"]["content"])
-        result.append({"answer": response["choices"][0]["message"]["content"]})
-    except Exception as e:
-        print(e)
-        pass
-    time.sleep(5)
+prompt = """###Instruction:
+
+根据句子内容，针对句子中未提问的问题或者已经提到的事情进一步提问，返回几个的提问的结果，并满足如下几点要求：
+
+1.如果在提问并回答如下话题：个人情况，个人简历，家庭成员，法律条款，身体状况等，返回的问题可以参考但不局限于：因为什么事情报案？描述一下具体事情发生的经过？
+2.如果在提问并回答案件经过，需要依据人物，时间，地点，事件内容，补充句子中未提及的问题；
+3.如果事发经过中，未提及事情发生的时间、地点，请补充提问；
+4.不能提问与句子无关的内容；
+5.不需要回答句子中的问题；
+6.问题在对话中不能有答案；
+7.问题需要对警察梳理案件有正向促进作用；
+8.不能提问句子中已经存在或者相似的问题；
+9.提问5~10个问题，每个问题不少于15字
+
+###Input:
+
+问:这是《证人权利义务告知书》,交给你阅读,如果你阅读有困难,我们可以向你宣读。如果你有不明白的地方,我们可以向你解释。
+答:好的。
+问:你的身份情况?
+答:我叫凌辰轩,重庆市鞍山市华容县新河镇山泉村山泉路00号山泉新村000号族,高中,居民身份证号码:110110194107032222,出生日期:2002年07月01日,户籍地址:重庆市鞍山市华容县新河镇山泉村山泉路00号山泉新村000号,现住址:重庆市鞍山市华容县新河镇山泉村山泉路00号山泉新村000号,工作单位是:苏州大学联系电话:13700000000。
+问:你因何事来公安机关?
+答:我们因车辆行驶,与人起了纠纷。
+问:你把事情经过讲一下?
+答:2023年01月28日晚上8点左右,我驾驶着车辆在澄杨路山泉路口上,从东往西行驶,路口是三车道,我们在左转车道上面(车上当时5个人,我,我爸妈,堂叔和堂叔妈妈)。驾驶到前方红绿灯路口,我因离合没踩稳,导致车子熄火,这时前方信号灯已经转绿,但是我打了三次火都没成功,后面的车辆已经在鸣喇叭示意了,我老爸探出窗向后面示意,说了句抱款,打了声招呼,到信号灯快转红我才把车开走,对方跟着我们过了路口,我们把车子从西面大门进了山泉新村小区,去停到大西桥山泉村山泉路00号山泉新村000栋东面的停车位上,这时一个男人从后面一栋楼跟过来看上去是我们在红绿灯路口时,后面一辆车上的人),问我们当时在路口为什么停着不动,还用力拍打我的车玻璃,我家里人就都下车,与对方解释缘由,但对方态度比较差,我老爸的脾气也比较硬
+"""
+c = 0
+with jsonlines.open("./wx1_chatgpt.jsonl",'w') as w:
+    with open("./wx1.json",encoding="utf-8") as rfile:
+        data = json.load(rfile)
+        for line in tqdm(data):
+            try:
+                prompt = line["instruction"] + line["input"]
+                response = openai.ChatCompletion.create(
+                    model="gpt-3.5-turbo",
+                    messages=[
+                        {"role": "system", "content": "You are a helpful assistant."},
+                        {"role": "user", "content": prompt},
+                    ],
+                )
+                print(response["choices"][0]["message"]["content"])
+                result.append({"answer": response["choices"][0]["message"]["content"]})
+                line["target"] = response["choices"][0]["message"]["content"]
+                w.write(line)
+            except Exception as e:
+                print(e)
+                pass
+            time.sleep(20)
+
 # with open("../data/data.json", 'w', encoding="utf-8") as w:
 #     json.dump(result,w,ensure_ascii=False,indent=2)
-
-

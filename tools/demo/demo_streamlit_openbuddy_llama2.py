@@ -1,22 +1,34 @@
+import sys
+
 import streamlit as st
-from streamlit_chat import message
-from transformers import AutoModel,AutoTokenizer
 import torch
+from streamlit_chat import message
+from transformers import AutoTokenizer, GenerationConfig
+from transformers import LlamaForCausalLM,AutoModelForCausalLM
 
 st.set_page_config(
-    page_title="chatglm2",
+    page_title="OpenBuddy-LLama2",
     page_icon=":robot:"
 )
 
 
+def generate_prompt(instruction, input=None):
+    return f"""\nUser:{instruction}\n\nAssistant:"""
+
+
 @st.cache_resource
 def get_model():
-    model_path = "/data/pretrained_models/chatglm2-6b-20230625"
-    model = AutoModel.from_pretrained(model_path, trust_remote_code=True, load_in_8bit=False,torch_dtype=torch.float16, device_map='auto')
+    # model_path = "/data/pretrained_models/openbuddy-llama2-13b-v8.1-fp16"
+    model_path = "/data/pretrained_models/openbuddy-llama2-70b-v10.1-bf16"
+    model = AutoModelForCausalLM.from_pretrained(model_path, trust_remote_code=True, load_in_8bit=True,
+                                                  torch_dtype=torch.float16,
+                                                  device_map='auto')
     tokenizer = AutoTokenizer.from_pretrained(model_path, trust_remote_code=True)
-
     model = model.eval()
+    if torch.__version__ >= "2" and sys.platform != "win32":
+        model = torch.compile(model)
     return tokenizer, model
+
 
 def predict(input, max_length, top_p, temperature, history=None):
     tokenizer, model = get_model()
@@ -32,11 +44,23 @@ def predict(input, max_length, top_p, temperature, history=None):
         message(input, avatar_style="big-smile", key=str(len(history)) + "_user")
         st.write("AI正在回复:")
         with st.empty():
-            for response, history in model.stream_chat(tokenizer, input, history, max_length=max_length, top_p=top_p,
-                                                       temperature=temperature):
-                query, response = history[-1]
-                st.write(response)
+            prompts = generate_prompt(input, "")
 
+            batch = tokenizer(prompts, return_tensors="pt")
+            out = model.generate(
+                input_ids=batch['input_ids'].cuda(),
+                max_length=max_length,
+                do_sample=False,
+                top_p=top_p,
+                temperature=temperature
+            )
+            in_text_decode = tokenizer.decode(batch["input_ids"][0])
+
+            out_text = tokenizer.decode(out[0])
+            answer = out_text.replace(in_text_decode, "").replace("</s>", "").strip()
+
+            st.write(answer)
+            history.append((input, answer))
     return history
 
 
@@ -51,10 +75,10 @@ max_length = st.sidebar.slider(
     'max_length', 0, 4096, 2048, step=1
 )
 top_p = st.sidebar.slider(
-    'top_p', 0.0, 1.0, 0.9, step=0.01
+    'top_p', 0.0, 1.0, 0.6, step=0.01
 )
 temperature = st.sidebar.slider(
-    'temperature', 0.0, 1.0, 0.5, step=0.01
+    'temperature', 0.0, 1.0, 0.95, step=0.01
 )
 
 if 'state' not in st.session_state:
