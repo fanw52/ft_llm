@@ -11,8 +11,11 @@ st.set_page_config(
 
 @st.cache_resource
 def get_model():
-    model_path = "/data/pretrained_models/chatglm-6b-20230523"
-    peft_model_path = "/data/wufan/experiments/wx_bilu_v2.0.3"
+    # model_path = "/data/pretrained_models/chatglm-6b-20230523"
+    # peft_model_path = "/data/wufan/experiments/wx_bilu_v2.0.3"
+    model_path = "/data/pretrained_models/chatglm2-6b-20230625"
+    peft_model_path = "/data1/wufan/experiments/llm/wx_bilu_v2.1.0/chatglm-6b-lora-wx-1e-5/checkpoint-1000"
+
     model = AutoModel.from_pretrained(model_path, trust_remote_code=True, load_in_8bit=False,torch_dtype=torch.float16, device_map='auto')
     tokenizer = AutoTokenizer.from_pretrained(model_path, trust_remote_code=True)
     model = PeftModel.from_pretrained(model, peft_model_path, load_in_8bit=True, device_map='auto')

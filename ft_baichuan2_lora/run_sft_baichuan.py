@@ -33,8 +33,9 @@ from rouge_chinese import Rouge
 
 sys.path.append("./")
 from arguments import ModelArguments, DataTrainingArguments
-from models.baichuan.tokenization_baichuan import BaiChuanTokenizer
-from models.baichuan.modeling_baichuan import BaiChuanForCausalLM
+
+from transformers import AutoModelForCausalLM,AutoTokenizer
+
 from transformers import (
     AutoConfig,
     DataCollatorForSeq2Seq,
@@ -107,14 +108,16 @@ def main():
     config.pre_seq_len = model_args.pre_seq_len
     config.prefix_projection = model_args.prefix_projection
 
-    tokenizer = BaiChuanTokenizer.from_pretrained(
-        model_args.model_name_or_path
+    tokenizer = AutoTokenizer.from_pretrained(
+        model_args.model_name_or_path,
+        trust_remote_code=True
     )
-    # TODO: 预训练代码中未初始化pad_token
-    tokenizer.pad_token = tokenizer.unk_token
-    model = BaiChuanForCausalLM.from_pretrained(
+    # TODO: Baichuan2初始化了pad_token
+    # tokenizer.pad_token = tokenizer.eos_token
+    model = AutoModelForCausalLM.from_pretrained(
         model_args.model_name_or_path,
         config=config,
+        trust_remote_code=True
     ).half().cuda()
 
     if model_args.peft_path is not None:

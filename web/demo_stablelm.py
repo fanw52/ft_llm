@@ -162,7 +162,7 @@ parser.add_argument(
     type=str,
     help='If None, cuda:0 will be used. Inference using multi-cards: --gpus=0,1,... ')
 parser.add_argument('--share', default=True, help='Share gradio domain name')
-parser.add_argument('--port', default=19324, type=int, help='Port of gradio demo')
+parser.add_argument('--port', default=19324, type=int, help='Port of gradio web')
 parser.add_argument(
     '--max_memory',
     default=256,

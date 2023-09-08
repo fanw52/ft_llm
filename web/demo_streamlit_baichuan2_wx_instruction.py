@@ -46,6 +46,23 @@ def init_chat_history():
 
     return st.session_state.messages
 
+def generate_prompt(input):
+    instruction = """###Instruction:
+
+根据句子内容，针对句子中未提问的问题或者已经提到的事情进一步提问，返回几个的提问的结果，并满足如下几点要求：
+1.如果在提问并回答如下话题：个人情况，个人简历，家庭成员，法律条款，身体状况等，返回的问题可以参考但不局限于：因为什么事情报案？描述一下具体事情发生的经过？
+2.如果在提问并回答案件经过，需要依据人物，时间，地点，事件内容，补充句子中未提及的问题；
+3.如果事发经过中，未提及事情发生的时间、地点，请补充提问；
+4.不能提问与句子无关的内容；
+5.不需要回答句子中的问题；
+6.问题在对话中不能有答案；
+7.问题需要对警察梳理案件有正向促进作用；
+8.不能提问句子中已经存在或者相似的问题；
+9.提问5~10个问题，每个问题不少于15字；
+10.如果输入的内容无法理解，请回答：无法理解输入的内容，请重新组织语言
+
+"""
+    return f"""\nUser:{instruction}###Input:\n{input}\n\nAssistant:"""
 
 def main():
     model_path = "/data1/pretrained_models/Baichuan2-13B-Chat"
@@ -56,10 +73,13 @@ def main():
         with st.chat_message("user", avatar='🧑‍💻'):
             st.markdown(prompt)
         messages.append({"role": "user", "content": prompt})
+        prompt = generate_prompt(prompt)
         print(f"[user] {prompt}", flush=True)
         with st.chat_message("assistant", avatar='🤖'):
             placeholder = st.empty()
-            for response in model.chat(tokenizer, messages, stream=True):
+            # TODO:
+            for response in model.chat(tokenizer, [{"role": "user", "content": prompt}], stream=True):
+                print(response)
                 placeholder.markdown(response)
                 if torch.backends.mps.is_available():
                     torch.mps.empty_cache()

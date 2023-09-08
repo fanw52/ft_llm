@@ -1,9 +1,9 @@
 
 import jsonlines
 import json
-path = "/Users/admin/Downloads/train_aug_0609_cls_mini.jsonl"
+path = "/data/wufan/data/wx_bilu_aug/val_aug_0609.json"
 result = []
-
+c = 0
 instruction = """###Instruction:
 
 根据句子内容，针对句子中未提问的问题或者已经提到的事情进一步提问，返回几个的提问的结果，并满足如下几点要求：
@@ -38,15 +38,21 @@ with jsonlines.open(path) as reader:
 
 {input}"""
         x = x.replace("可以继续提问的1个问题：\n","").replace("可以继续提问的2个问题：\n","").replace("可以继续提问的3个问题：\n","")
-        print(x)
+        # print(x)
         input = input.replace("可以继续提问的1个问题：","").replace("可以继续提问的2个问题：","").replace("可以继续提问的3个问题：","")
         result.append({"instruction": instruction, "input": input})
+        print(input)
+        print()
+        c+=1
+        if c==100:
+            break
 
-
-output_path = "../wx1.json"
-with open(output_path,'w',encoding="utf-8") as w:
-    json.dump(result[:1000],w,ensure_ascii=False)
-
-output_path = "../wx2.json"
-with open(output_path,'w',encoding="utf-8") as w:
-    json.dump(result[1000:],w,ensure_ascii=False)
+#
+#
+# output_path = "../wx1.json"
+# with open(output_path,'w',encoding="utf-8") as w:
+#     json.dump(result[:1000],w,ensure_ascii=False)
+#
+# output_path = "../wx2.json"
+# with open(output_path,'w',encoding="utf-8") as w:
+#     json.dump(result[1000:],w,ensure_ascii=False)

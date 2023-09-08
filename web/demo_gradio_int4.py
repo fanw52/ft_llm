@@ -1,32 +1,35 @@
-from transformers import AutoModel, AutoTokenizer
 import streamlit as st
 from streamlit_chat import message
-from peft import PeftModel
+# from transformers import AutoModel, AutoTokenizer
 
 st.set_page_config(
-    page_title="chatglm原生int4大模型演示",
+    page_title="chatglm微调大模型演示",
     page_icon=":robot:"
 )
 
 
 @st.cache_resource
 def get_model():
-    # model_path = "/data1/pretrained_models/chatglm-6b-20230523"
-    # # peft_model_path = "/data1/wufan2/llm/experiments/wx_bilu_v2.0.3"
-    # model = AutoModel.from_pretrained(model_path, trust_remote_code=True, load_in_8bit=True, device_map='auto')
+    # model_path = "THUDM/chatglm-6b-int4"
+    # model = AutoModel.from_pretrained(model_path, trust_remote_code=True, device_map='auto')
     # tokenizer = AutoTokenizer.from_pretrained(model_path, trust_remote_code=True)
-    # # model = PeftModel.from_pretrained(model, peft_model_path, load_in_8bit=True, device_map='auto')
 
-    model_path = "/data1/pretrained_models/chatglm-6b-20230523-int4"
-    model_path = "/data1/pretrained_models/chatglm-6b-int4"
+    # model_path = "/data1/pretrained_models/chatglm-6b-int4"
+    # tokenizer = AutoTokenizer.from_pretrained(model_path, trust_remote_code=True)
+    # model = AutoModel.from_pretrained(model_path, trust_remote_code=True).half().cuda()
+
+    # model_path = "/data1/pretrained_models/chatglm-6b-20230523-wx-lora-int4"
+    model_path = "/data1/pretrained_models/chatglm-6b-20230523-wx-lora-int4-v2.0.4"
+
     import sys
-    sys.path.append("../")
+    sys.path.append("../tools/")
     from models.chatglm.modeling_chatglm import ChatGLMForConditionalGeneration
     from models.chatglm.tokenization_chatglm import ChatGLMTokenizer
     tokenizer = ChatGLMTokenizer.from_pretrained(model_path)
     model = ChatGLMForConditionalGeneration.from_pretrained(model_path).half().cuda()
     model = model.eval()
     return tokenizer, model
+
 
 def predict(input, max_length, top_p, temperature, history=None):
     tokenizer, model = get_model()
@@ -43,7 +46,7 @@ def predict(input, max_length, top_p, temperature, history=None):
         st.write("AI正在回复:")
         with st.empty():
             for response, history in model.stream_chat(tokenizer, input, history, max_length=max_length, top_p=top_p,
-                                               temperature=temperature):
+                                                       temperature=temperature):
                 query, response = history[-1]
                 st.write(response)
 
@@ -54,8 +57,8 @@ container = st.container()
 
 # create a prompt text for the text generation
 prompt_text = st.text_area(label="用户命令输入",
-            height = 100,
-            placeholder="请在这儿输入您的命令")
+                           height=100,
+                           placeholder="请在这儿输入您的命令")
 
 max_length = st.sidebar.slider(
     'max_length', 0, 4096, 2048, step=1
