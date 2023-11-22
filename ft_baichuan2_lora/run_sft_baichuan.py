@@ -34,7 +34,7 @@ from rouge_chinese import Rouge
 sys.path.append("./")
 from arguments import ModelArguments, DataTrainingArguments
 
-from transformers import AutoModelForCausalLM,AutoTokenizer
+from transformers import AutoModelForCausalLM, AutoTokenizer
 
 from transformers import (
     AutoConfig,
@@ -206,12 +206,16 @@ def main():
         return model_inputs
 
     def preprocess_function_train(examples):
+        # 该类的出处参考链接：https://github.com/baichuan-inc/Baichuan2/blob/main/fine-tune/fine-tune.py#L39
         max_seq_length = data_args.max_source_length + data_args.max_target_length
 
         model_inputs = {
             "input_ids": [],
             "labels": [],
         }
+
+        user_token_id = 195
+        assistant_token_id = 196
         for i in range(len(examples[instruction_column])):
             if examples[instruction_column][i] and examples[response_column][i]:
                 instruction, input, answer = examples[instruction_column][i], examples[input_column][i], \
@@ -223,47 +227,28 @@ def main():
                     prompt = ""
                     history = examples[history_column][i]
                     for turn_idx, (old_query, response) in enumerate(history):
-                        prompt += "[User]:{}\n[Assisant]:{}\n".format(old_query, response)
-                    prompt += "[User]:{}\n".format(instruction + input)
-
+                        prompt += "{}\n{}\n".format(old_query, response)
+                    prompt += "{}\n".format(instruction + input)
                 # 手动添加eos
                 tokenized_sources = tokenizer.encode(prompt, add_special_tokens=False)
                 tokenized_targets = tokenizer.encode(answer, add_special_tokens=False)
-
+                tokenized_sources = [user_token_id] + tokenized_sources
                 if len(tokenized_sources) > data_args.max_source_length:
                     tokenized_sources = tokenized_sources[: data_args.max_source_length]
 
-                # 需要在tokenized_targets的首尾添加bos和eos
                 if len(tokenized_targets) > data_args.max_target_length - 2:
                     tokenized_targets = tokenized_targets[: data_args.max_target_length - 2]
 
                 input_ids = tokenized_sources
                 context_length = len(input_ids)
                 if len(tokenized_targets):
-                    input_ids = input_ids + [tokenizer.bos_token_id] + tokenized_targets + [tokenizer.eos_token_id]
-
-                # labels = [-100] * (context_length) + input_ids[context_length:]
+                    input_ids = input_ids + [assistant_token_id] + tokenized_targets + [tokenizer.eos_token_id]
 
                 pad_len = max_seq_length - len(input_ids)
                 input_ids = input_ids + [tokenizer.pad_token_id] * pad_len
-                # labels = labels + [tokenizer.pad_token_id] * pad_len
-                labels = [-100] * context_length + [tokenizer.bos_token_id] + tokenized_targets + [
-                    tokenizer.eos_token_id] + [-100] * pad_len
-                # if data_args.ignore_pad_token_for_loss:
-                #     labels = [(l if l != tokenizer.pad_token_id else -100) for l in labels]
 
-                '''
-                input_ids: [1, 31106, 6971, 13502, 1, 31106, 33211, 31239, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2]
-                labels: [-100, -100, -100, -100, 1, 31106, 33211, 31239, -100, -100, -100, -100, -100, -100, -100, -100, -100, -100, -100, -100]
-                计算损失时：
-                shift_logits = logits[..., :-1, :].contiguous()
-                shift_labels = labels[..., 1:].contiguous()
-                这就使得：
-                logits: [1, 31106, 6971, 13502, 1, 31106, 33211, 31239, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2]
-                labels: [-100, -100, -100, 1, 31106, 33211, 31239, -100, -100, -100, -100, -100, -100, -100, -100, -100, -100, -100, -100]
-                输入13502预测1
-                下个step输入1预测31106
-                '''
+                labels = [-100] * context_length + [-100] + tokenized_targets + [
+                    tokenizer.eos_token_id] + [-100] * pad_len
                 assert len(input_ids) == len(labels)
                 model_inputs["input_ids"].append(input_ids)
                 model_inputs["labels"].append(labels)
@@ -272,7 +257,7 @@ def main():
 
     def print_dataset_example(example):
         logger.info(f"input_ids: {example['input_ids']}")
-        logger.info(f"inputs: {tokenizer.decode(example['input_ids'])}")
+        # logger.info(f"inputs: {tokenizer.decode(example['input_ids'])}")
         logger.info(f"label_ids: {example['labels']}")
         # TODO: 使用eos充当pad，解码时存在一点问题
         # logger.info(f"labels: {tokenizer.decode(example['labels'],skip_special_tokens=True)}")
