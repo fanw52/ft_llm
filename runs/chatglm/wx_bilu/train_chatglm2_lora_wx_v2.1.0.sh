@@ -13,9 +13,9 @@ deepspeed_config_file=./configs/deepspeed_config_zero2_offload.json
 
 # 激活a40环境chatglm
 # conda activate chatglm
-torchrun \
+CUDA_VISIBLE_DEVICES=0 torchrun \
     --nnodes 1 \
-    --nproc_per_node 2  \
+    --nproc_per_node 1  \
     --master_port=29600 \
     ft_chatglm_lora/run_sft_chatglm.py \
     --deepspeed ${deepspeed_config_file} \

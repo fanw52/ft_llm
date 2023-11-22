@@ -24,7 +24,8 @@ from transformers.trainer_utils import PredictionOutput
 from transformers.utils import logging
 
 
-from trainer.trainer import Trainer
+# from trainer.trainer import Trainer
+from transformers import Trainer
 
 logger = logging.get_logger(__name__)
 

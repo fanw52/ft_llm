@@ -61,7 +61,6 @@ def main():
             placeholder = st.empty()
             # TODO:
             for response in model.chat(tokenizer, messages, stream=True):
-                print(response)
                 placeholder.markdown(response)
                 if torch.backends.mps.is_available():
                     torch.mps.empty_cache()

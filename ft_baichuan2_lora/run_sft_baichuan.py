@@ -167,6 +167,10 @@ def main():
     max_target_length = data_args.max_target_length
 
     def preprocess_function_eval(examples):
+        '''
+        未使用
+        '''
+
         inputs, targets = [], []
         for i in range(len(examples[instruction_column])):
             if not examples[response_column][i]:
@@ -219,8 +223,8 @@ def main():
                     prompt = ""
                     history = examples[history_column][i]
                     for turn_idx, (old_query, response) in enumerate(history):
-                        prompt += "问：{}\n答：{}\n".format(turn_idx, old_query, response)
-                    prompt += "问：{}\n答：".format(len(history), instruction + input)
+                        prompt += "问：{}\n答：{}\n".format(old_query, response)
+                    prompt += "问：{}\n答：".format(instruction + input)
 
                 # 手动添加eos
                 tokenized_sources = tokenizer.encode(prompt, add_special_tokens=False)
@@ -394,7 +398,7 @@ def main():
         tokenizer=tokenizer,
         data_collator=data_collator,
         compute_metrics=compute_metrics if training_args.predict_with_generate else None,
-        save_prefixencoder=model_args.pre_seq_len is not None
+        # save_prefixencoder=model_args.pre_seq_len is not None
     )
 
     # Training

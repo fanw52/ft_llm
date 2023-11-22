@@ -6,6 +6,7 @@ import json
 import jsonlines
 # openai.api_key = "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"
 openai.api_key = "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"
+openai.api_key = "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"
 
 
 result = []
@@ -36,27 +37,25 @@ prompt = """###Instruction:
 答:2023年01月28日晚上8点左右,我驾驶着车辆在澄杨路山泉路口上,从东往西行驶,路口是三车道,我们在左转车道上面(车上当时5个人,我,我爸妈,堂叔和堂叔妈妈)。驾驶到前方红绿灯路口,我因离合没踩稳,导致车子熄火,这时前方信号灯已经转绿,但是我打了三次火都没成功,后面的车辆已经在鸣喇叭示意了,我老爸探出窗向后面示意,说了句抱款,打了声招呼,到信号灯快转红我才把车开走,对方跟着我们过了路口,我们把车子从西面大门进了山泉新村小区,去停到大西桥山泉村山泉路00号山泉新村000栋东面的停车位上,这时一个男人从后面一栋楼跟过来看上去是我们在红绿灯路口时,后面一辆车上的人),问我们当时在路口为什么停着不动,还用力拍打我的车玻璃,我家里人就都下车,与对方解释缘由,但对方态度比较差,我老爸的脾气也比较硬
 """
 c = 0
-with jsonlines.open("./wx1_chatgpt.jsonl",'w') as w:
-    with open("./wx1.json",encoding="utf-8") as rfile:
-        data = json.load(rfile)
-        for line in tqdm(data):
-            try:
-                prompt = line["instruction"] + line["input"]
-                response = openai.ChatCompletion.create(
-                    model="gpt-3.5-turbo",
-                    messages=[
-                        {"role": "system", "content": "You are a helpful assistant."},
-                        {"role": "user", "content": prompt},
-                    ],
-                )
-                print(response["choices"][0]["message"]["content"])
-                result.append({"answer": response["choices"][0]["message"]["content"]})
-                line["target"] = response["choices"][0]["message"]["content"]
-                w.write(line)
-            except Exception as e:
-                print(e)
-                pass
-            time.sleep(20)
+with open("./wx1.json",encoding="utf-8") as rfile:
+    data = json.load(rfile)
+    for line in tqdm(data):
+        try:
+            prompt = line["instruction"] + line["input"]
+            response = openai.ChatCompletion.create(
+                model="gpt-3.5-turbo",
+                messages=[
+                    {"role": "system", "content": "You are a helpful assistant."},
+                    {"role": "user", "content": prompt},
+                ],
+            )
+            print(response["choices"][0]["message"]["content"])
+            result.append({"answer": response["choices"][0]["message"]["content"]})
+            line["target"] = response["choices"][0]["message"]["content"]
+        except Exception as e:
+            print(e)
+            pass
+        time.sleep(20)
 
 # with open("../data/data.json", 'w', encoding="utf-8") as w:
 #     json.dump(result,w,ensure_ascii=False,indent=2)
