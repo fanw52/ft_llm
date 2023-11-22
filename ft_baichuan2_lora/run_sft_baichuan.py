@@ -223,8 +223,8 @@ def main():
                     prompt = ""
                     history = examples[history_column][i]
                     for turn_idx, (old_query, response) in enumerate(history):
-                        prompt += "问：{}\n答：{}\n".format(old_query, response)
-                    prompt += "问：{}\n答：".format(instruction + input)
+                        prompt += "[User]:{}\n[Assisant]:{}\n".format(old_query, response)
+                    prompt += "[User]:{}\n".format(instruction + input)
 
                 # 手动添加eos
                 tokenized_sources = tokenizer.encode(prompt, add_special_tokens=False)
