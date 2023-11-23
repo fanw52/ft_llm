@@ -362,7 +362,7 @@ def main():
         tokenizer=tokenizer,
         data_collator=data_collator,
         compute_metrics=compute_metrics if training_args.predict_with_generate else None,
-        # save_prefixencoder=model_args.pre_seq_len is not None
+        save_prefixencoder=model_args.pre_seq_len is not None
     )
 
     # Training
@@ -385,7 +385,7 @@ def main():
 
         trainer.log_metrics("train", metrics)
         trainer.save_metrics("train", metrics)
-        trainer.save_state()
+        # trainer.save_state()
 
     # Evaluation
     results = {}
