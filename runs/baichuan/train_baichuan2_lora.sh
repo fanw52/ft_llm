@@ -19,9 +19,10 @@ your_checkpopint_path="/data1/wufan/experiments/llm/Baichuan2-13B-Chat/wx_bilu_p
 deepspeed_config_file=./configs/deepspeed_config_zero2_offload.json
 
 # 启动指令
-CUDA_VISIBLE_DEVICES=0 torchrun \
+CUDA_VISIBLE_DEVICES=1 torchrun \
     --nnodes 1 \
     --nproc_per_node 1 \
+    --master_port=29601 \
     ft_baichuan2_lora/run_sft_baichuan.py \
     --deepspeed ${deepspeed_config_file} \
     --do_train \
@@ -41,7 +42,7 @@ CUDA_VISIBLE_DEVICES=0 torchrun \
     --gradient_accumulation_steps 1 \
     --max_steps 1000 \
     --logging_steps 10 \
-    --save_steps 1000 \
+    --save_steps 500 \
     --save_total_limit 1 \
     --learning_rate $LR \
     --lora_rank ${lora_rank} \

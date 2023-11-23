@@ -33,10 +33,10 @@ CUDA_VISIBLE_DEVICES=0 torchrun \
     --per_device_train_batch_size 4 \
     --per_device_eval_batch_size 4 \
     --gradient_accumulation_steps 1 \
-    --max_steps 1000 \
+    --max_steps 10 \
     --save_total_limit 1 \
     --logging_steps 1 \
-    --save_steps 1000 \
+    --save_steps 10 \
     --learning_rate $LR \
     --lora_rank ${lora_rank} \
     --trainable ${lora_trainable} \
