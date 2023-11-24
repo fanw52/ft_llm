@@ -112,9 +112,7 @@ def main():
         model_args.model_name_or_path,
         trust_remote_code=True
     )
-    # TODO: Baichuan2初始化了pad_token
-    # tokenizer.assistant_token_id = 196
-    # tokenizer.user_token_id = 195
+
     model = AutoModelForCausalLM.from_pretrained(
         model_args.model_name_or_path,
         config=config,
@@ -231,8 +229,6 @@ def main():
                         prompt += "{}\n{}\n".format(old_query, response)
                     prompt += "{}\n".format(instruction + input)
                 # 手动添加eos
-                print(">>>>",prompt)
-                print("<<<<",answer)
                 tokenized_sources = tokenizer.encode(prompt, add_special_tokens=False)
                 tokenized_targets = tokenizer.encode(answer, add_special_tokens=False)
                 tokenized_sources = [user_token_id] + tokenized_sources
@@ -262,7 +258,6 @@ def main():
         logger.info(f"input_ids: {example['input_ids']}")
         logger.info(f"inputs: {tokenizer.decode([ids for ids in example['input_ids'] if ids!=-100])}")
         logger.info(f"label_ids: {example['labels']}")
-        # TODO: 使用eos充当pad，解码时存在一点问题
         logger.info(f"labels: {tokenizer.decode([ids for ids in example['labels'] if ids!=-100],skip_special_tokens=True)}")
 
     if training_args.do_train:
