@@ -236,10 +236,9 @@ def main():
 
     def print_dataset_example(example):
         logger.info(f"input_ids: {example['input_ids']}")
-        logger.info(f"inputs: {tokenizer.decode(example['input_ids'])}")
+        logger.info(f"inputs: {tokenizer.decode([ids for ids in example['input_ids'] if ids!=-100])}")
         logger.info(f"label_ids: {example['labels']}")
-        # TODO: 使用eos充当pad，解码时存在一点问题
-        # logger.info(f"labels: {tokenizer.decode(example['labels'],skip_special_tokens=True)}")
+        logger.info(f"labels: {tokenizer.decode([ids for ids in example['labels'] if ids!=-100],skip_special_tokens=True)}")
 
     if training_args.do_train:
         if "train" not in raw_datasets:
