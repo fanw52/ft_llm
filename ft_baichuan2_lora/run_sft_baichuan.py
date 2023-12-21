@@ -206,7 +206,7 @@ def main():
 
     def preprocess_function_train(examples):
         # 该类的出处参考链接：https://github.com/baichuan-inc/Baichuan2/blob/main/fine-tune/fine-tune.py#L39
-        max_seq_length = data_args.max_source_length + data_args.max_target_length
+        max_seq_length = data_args.max_length
 
         model_inputs = {
             "input_ids": [],
@@ -228,37 +228,42 @@ def main():
                     for turn_idx, (old_query, response) in enumerate(history):
                         prompt += "{}\n{}\n".format(old_query, response)
                     prompt += "{}\n".format(instruction + input)
-                # 手动添加eos
+
                 tokenized_sources = tokenizer.encode(prompt, add_special_tokens=False)
                 tokenized_targets = tokenizer.encode(answer, add_special_tokens=False)
-                tokenized_sources = [user_token_id] + tokenized_sources
-                if len(tokenized_sources) > data_args.max_source_length:
-                    tokenized_sources = tokenized_sources[: data_args.max_source_length]
 
-                if len(tokenized_targets) > data_args.max_target_length - 2:
-                    tokenized_targets = tokenized_targets[: data_args.max_target_length - 2]
+                # 组合input
+                input_ids = [user_token_id] + tokenized_sources
+                labels_ids = [tokenizer.eos_token_id] + [-100] * len(tokenized_sources)
 
-                input_ids = tokenized_sources
-                context_length = len(input_ids)
-                if len(tokenized_targets):
-                    input_ids = input_ids + [assistant_token_id] + tokenized_targets + [tokenizer.eos_token_id]
+                # 组合target
+                input_ids = input_ids + [assistant_token_id] + tokenized_targets + [tokenizer.eos_token_id]
+                labels_ids = labels_ids + [-100] + tokenized_targets + [tokenizer.eos_token_id]
 
-                pad_len = max_seq_length - len(input_ids)
-                input_ids = input_ids + [tokenizer.pad_token_id] * pad_len
+                # 截断并添加padding
+                input_ids = input_ids[:max_seq_length] + [tokenizer.pad_token_id] * (max_seq_length - len(input_ids))
+                labels_ids = labels_ids[:max_seq_length] + [-100] * (max_seq_length - len(labels_ids))
 
-                labels = [-100] * context_length + [-100] + tokenized_targets + [
-                    tokenizer.eos_token_id] + [-100] * pad_len
-                assert len(input_ids) == len(labels)
+                # 计算损失时的输入
+                '''
+                shifted_prediction_scores = prediction_scores[:, :-1, :].contiguous()
+                labels = labels[:, 1:].contiguous()
+                
+                标签从第2个token开始，输入到倒数第二个token结束
+                '''
+
+                assert len(input_ids) == len(labels_ids)
                 model_inputs["input_ids"].append(input_ids)
-                model_inputs["labels"].append(labels)
+                model_inputs["labels"].append(labels_ids)
 
         return model_inputs
 
     def print_dataset_example(example):
         logger.info(f"input_ids: {example['input_ids']}")
-        logger.info(f"inputs: {tokenizer.decode([ids for ids in example['input_ids'] if ids!=-100])}")
+        logger.info(f"inputs: {tokenizer.decode([ids for ids in example['input_ids'] if ids != -100])}")
         logger.info(f"label_ids: {example['labels']}")
-        logger.info(f"labels: {tokenizer.decode([ids for ids in example['labels'] if ids!=-100],skip_special_tokens=True)}")
+        logger.info(
+            f"labels: {tokenizer.decode([ids for ids in example['labels'] if ids != -100], skip_special_tokens=True)}")
 
     if training_args.do_train:
         if "train" not in raw_datasets:

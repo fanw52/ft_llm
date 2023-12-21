@@ -1,3 +1,4 @@
+
 lora_rank=8
 lora_trainable="W_pack,o_proj,gate_proj,down_proj,up_proj"
 modules_to_save="null"
@@ -16,7 +17,7 @@ your_data_path="/data/wufan/data/wx_bilu_plus"
 your_checkpopint_path="/data1/wufan/experiments/llm/Baichuan2-13B-Chat/wx_bilu_plus_20231122"
 
 # deepspeed配置路径
-deepspeed_config_file=./configs/deepspeed_config_zero2_offload.json
+deepspeed_config_file=./configs/deepspeed_config_zero3_offload.json
 
 # baichuan中如果不做val和prediction，这两项不用修改
 max_source_length=1536
@@ -28,12 +29,7 @@ max_steps=3000
 save_steps=1000
 
 
-# 启动指令
-CUDA_VISIBLE_DEVICES=0 torchrun \
-    --nnodes 1 \
-    --nproc_per_node 1 \
-    --master_port=29601 \
-    ft_baichuan2_lora/run_sft_baichuan.py \
+deepspeed -i  localhost:0,1  ft_baichuan2_lora/run_sft_baichuan.py \
     --deepspeed ${deepspeed_config_file} \
     --do_train \
     --train_file $your_data_path/train.json \
@@ -61,6 +57,3 @@ CUDA_VISIBLE_DEVICES=0 torchrun \
     --modules_to_save ${modules_to_save} \
     --lora_dropout ${lora_dropout} \
     --fp16
-
-
-
