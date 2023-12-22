@@ -14,7 +14,7 @@ model_name_or_path="/data1/pretrained_models/Baichuan2-13B-Chat"
 your_data_path="/data/wufan/data/wx_bilu_plus"
 
 # 保存路径
-your_checkpopint_path="/data1/wufan/experiments/llm/Baichuan2-13B-Chat/wx_bilu_plus_20231122"
+your_checkpopint_path="/data1/wufan/experiments/llm/Baichuan2-13B-Chat/wx_bilu_plus_20231221"
 
 # deepspeed配置路径
 deepspeed_config_file=./configs/deepspeed_config_zero3_offload.json
@@ -29,7 +29,7 @@ max_steps=3000
 save_steps=1000
 
 
-deepspeed -i  localhost:0,1  ft_baichuan2_lora/run_sft_baichuan.py \
+deepspeed -i  localhost:0  ft_baichuan2_lora/run_sft_baichuan.py \
     --deepspeed ${deepspeed_config_file} \
     --do_train \
     --train_file $your_data_path/train.json \
