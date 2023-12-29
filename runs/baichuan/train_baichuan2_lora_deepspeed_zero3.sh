@@ -25,10 +25,10 @@ max_target_length=512
 
 # 参数
 max_length=2048
-max_steps=3000
+max_steps=1000
 save_steps=1000
 
-
+#TODO: bug==>adapter_model.bin保存的参数，部分loraA,loraB为空
 deepspeed -i  localhost:0  ft_baichuan2_lora/run_sft_baichuan.py \
     --deepspeed ${deepspeed_config_file} \
     --do_train \

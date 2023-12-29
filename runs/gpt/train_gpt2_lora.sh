@@ -6,23 +6,15 @@ LR=2e-4
 model_name_or_path="gpt2-xl"
 your_data_path="/data/wufan/data/AdvertiseGen"  # 填入数据集所在的文件夹路径
 your_checkpopint_path="./experiments/toy_examples_v1.0.0/"  # 填入用来存储模型的路径
-cache_dir=/data/wufan/llm/cache
 deepspeed_config_file=./configs/deepspeed_config_zero2_offload.json
-# #    --cache_dir ${cache_dir} \
-
-#torchrun \
-#    --nnodes 1 \
-#    --nproc_per_node 2 \
 
 CUDA_VISIBLE_DEVICES=0 python \
-    ft_clm/run_pt_clm.py \
+    ft_baichuan2_lora/run_pt_clm.py \
     --deepspeed ${deepspeed_config_file} \
     --do_train \
     --train_file $your_data_path/train.json \
     --validation_file $your_data_path/dev.json \
     --overwrite_cache \
-    --prompt_column input \
-    --response_column target \
     --model_name_or_path $model_name_or_path \
     --output_dir $your_checkpopint_path/gpt2-lora-$LR \
     --overwrite_output_dir \
