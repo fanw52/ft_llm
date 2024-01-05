@@ -25,6 +25,7 @@ max_target_length=512
 # 参数
 max_length=2048
 max_steps=3000
+nums_epoch=3
 save_steps=1000
 
 
@@ -51,7 +52,7 @@ CUDA_VISIBLE_DEVICES=0 torchrun \
     --per_device_train_batch_size 1 \
     --per_device_eval_batch_size 4 \
     --gradient_accumulation_steps 4 \
-    --max_steps ${max_steps} \
+    --num_train_epochs 3 \
     --logging_steps 1000 \
     --save_steps ${save_steps} \
     --save_total_limit 1 \

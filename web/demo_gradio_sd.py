@@ -2,7 +2,8 @@ import os
 
 import gradio as gr
 import torch
-from diffusers import DiffusionPipeline
+from diffusers import AutoPipelineForText2Image
+
 from huggingface_hub import snapshot_download
 from torch import autocast
 
@@ -18,22 +19,23 @@ os.environ["no_proxy"] = "localhost, 127.0.0.1"
 #                   local_dir="/data/pretrained_models/stable-diffusion-v1-5")
 
 # /data/pretrained_models/stable-diffusion-v1-5
-pipeline = DiffusionPipeline.from_pretrained("/data/pretrained_models/stable-diffusion-2-1", torch_dtype=torch.float16)
+pipe = AutoPipelineForText2Image.from_pretrained("/data1/pretrained_models/sdxl-turbo", torch_dtype=torch.float16, variant="fp16")
 # pipeline = DiffusionPipeline.from_pretrained("/data/pretrained_models/Taiyi-Stable-Diffusion-1B-Chinese-EN-v0.1", torch_dtype=torch.float16)
-pipeline.to("cuda")
+pipe.to("cuda")
 
 
 def generate(prompt="An image of a squirrel in Picasso style"):
     with autocast("cuda"):
-        image = pipeline(
-            prompt,
-            height=512,
-            width=512,
-            num_inference_steps=150,
-            guidance_scale=7.5,
-            negative_prompt=None,
-            num_images_per_prompt=1,
-        )["images"][0]
+        # image = pipe(
+        #     prompt,
+        #     height=512,
+        #     width=512,
+        #     num_inference_steps=150,
+        #     guidance_scale=7.5,
+        #     negative_prompt=None,
+        #     num_images_per_prompt=1,
+        # )["images"][0]
+        image = pipe(prompt=prompt, num_inference_steps=1, guidance_scale=0.0).images[0]
     return image
 
 
