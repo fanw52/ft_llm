@@ -29,4 +29,8 @@ python tools/download_model.py --repo_id stabilityai/stable-diffusion-xl-refiner
 
 2. shell脚本执行后，会在/data/pretrained_models下生成两个文件夹，stable-diffusion-xl-base-1.0，stable-diffusion-xl-refiner-1.0，如果保存到其他位置，需要修改脚本demo_sdxl_base_refiner.py中的base_model_path，以及refiner_model_path的路径
 
-3. 启动： streamlit run demo_sdxl_base_refiner.py
+3. 安装依赖：
+    pip install 
+
+4. 启动： streamlit run demo_sdxl_base_refiner.py
+
