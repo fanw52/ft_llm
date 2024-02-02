@@ -5,6 +5,7 @@ import uvicorn
 from fastapi import FastAPI
 from packaging import version
 from pydantic import BaseModel
+from transformers import AutoModelForCausalLM
 from transformers import AutoTokenizer
 from transformers import PreTrainedTokenizer
 from transformers.generation.utils import GenerationConfig
@@ -12,7 +13,8 @@ from transformers.generation.utils import GenerationConfig
 app = FastAPI()
 
 model_dir = '/data/pretrained_models/Qwen-14B-Chat'
-tensor_parallel_size = 1
+tensor_parallel_size = 2
+use_vllm = True
 
 _ERROR_BAD_CHAT_FORMAT = """\
 We detect you are probably using the pretrained model (rather than chat model) for chatting, since the chat_format in generation_config is not "chatml".
@@ -30,7 +32,29 @@ BatchTokensType = List[List[int]]
 
 
 class Payload(BaseModel):
-    messages = []
+    n: int
+    prompt: str
+    best_of: int
+    use_beam_search: bool
+    temperature: int
+    top_p: float
+    max_tokens: int
+    ignore_eos: bool
+    stream: bool
+
+
+def build_query(messages):
+    sys_prompt = messages[0]["content"]
+    query = sys_prompt
+
+    tmp_messages = messages[1:-1]
+    for i in range(0, len(tmp_messages), 2):
+        user_str = tmp_messages[i]["content"]
+        assi_str = tmp_messages[i + 1]["content"]
+        query += '\n' + user_str + '\n:' + assi_str
+
+    # query += ('\n' + messages[-1]["content"])
+    return query
 
 
 def get_stop_words_ids(chat_format, tokenizer):
@@ -236,29 +260,31 @@ class vLLMWrapper:
         return response, history
 
 
-model = vLLMWrapper(model_dir, tensor_parallel_size=tensor_parallel_size)
+if use_vllm:
+    model = vLLMWrapper(model_dir, tensor_parallel_size=tensor_parallel_size)
+else:
+    model = AutoModelForCausalLM.from_pretrained(
+        model_dir,
+        device_map="auto",
+        trust_remote_code=True).eval()
 
-
-def build_query(messages):
-    sys_prompt = messages[0]["content"]
-    query = sys_prompt
-
-    tmp_messages = messages[1:-1]
-    for i in range(0, len(tmp_messages), 2):
-        user_str = tmp_messages[i]["content"]
-        assi_str = tmp_messages[i + 1]["content"]
-        query += '\n' + user_str + '\n:' + assi_str
-
-    # query += ('\n' + messages[-1]["content"])
-    return query
+    config = GenerationConfig.from_pretrained(
+        model_dir, trust_remote_code=True)
+    tokenizer = AutoTokenizer.from_pretrained(model_dir, trust_remote_code=True)
 
 
 @app.post("/chat")
 async def chat(data: Payload):
-    messages = data.messages
-    query = build_query(messages)
-    response, history = model.chat(query=query,
-                                   history=None)
+    print(data)
+    prompt = data.prompt
+    if use_vllm:
+        response, history = model.chat(query=prompt,
+                                       history=None)
+    else:
+        response, history = model.chat(query=prompt,
+                                       tokenizer=tokenizer,
+                                       history=None)
+    print(response)
     result = {
         "choices": [{
             "index": 0,
