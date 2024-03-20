@@ -10,6 +10,9 @@ model = ChatGLMForConditionalGeneration.from_pretrained(model_path).half().cuda(
 tokenizer = ChatGLMTokenizer.from_pretrained(model_path)
 
 path = "/data/wufan/data/BELLE/Belle_open_source_0.5M_mini.json"
+
+
+queries = ["你好", "请介绍一下杭州", "那里有什么好吃的吗"]
 with open(path, encoding="utf-8") as rfile:
     data = json.load(rfile)
     num_prompts = len(data)

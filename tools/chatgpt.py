@@ -8,7 +8,9 @@ import jsonlines
 openai.api_key = "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"
 openai.api_key = "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"
 
-
+os.environ['HTTP_PROXY'] = "http://192.168.51.143:10811"
+os.environ['HTTPS_PROXY'] = "http://192.168.51.143:10811"
+os.environ["no_proxy"] = "localhost, 127.0.0.1"
 result = []
 
 prompt = """###Instruction:

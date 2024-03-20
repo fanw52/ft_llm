@@ -1,4 +1,5 @@
-lora_rank=8
+lora_rank=128 # ==> 40G
+# lora_rank=8 ==> 33G
 lora_trainable="W_pack,o_proj,gate_proj,down_proj,up_proj"
 modules_to_save="null"
 lora_dropout=0.1
@@ -52,7 +53,7 @@ CUDA_VISIBLE_DEVICES=0 torchrun \
     --per_device_train_batch_size 1 \
     --per_device_eval_batch_size 4 \
     --gradient_accumulation_steps 4 \
-    --num_train_epochs 3 \
+    --num_train_epochs ${nums_epoch} \
     --logging_steps 1000 \
     --save_steps ${save_steps} \
     --save_total_limit 1 \

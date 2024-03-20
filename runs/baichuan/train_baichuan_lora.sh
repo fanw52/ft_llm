@@ -40,7 +40,6 @@ torchrun \
     --modules_to_save ${modules_to_save} \
     --lora_dropout ${lora_dropout} \
     --fp16 \
-    --resume_from_checkpoint /data/wufan/experiments/llm/baichuan/baichuan_BELLE_v1.0.0/PromptCBLUE-chatglm-6b-lora-1e-5/checkpoint-6000
 
 
 

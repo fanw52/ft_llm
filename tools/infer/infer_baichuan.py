@@ -40,7 +40,7 @@ base_model = AutoModelForCausalLM.from_pretrained(
 
 model = PeftModel.from_pretrained(base_model,
                                   lora_model,
-                                  torch_dtype=torch.float16,
+                                  torch_dtype=torch.float32,
                                   device_map=device)
 
 model.eval()
